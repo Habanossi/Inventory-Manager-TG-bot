@@ -44,7 +44,7 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     print(inventory)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Listing the contents of the inventory: " + str(', '.join(inventory)) )
+    await context.bot.send_message(chat_id=update.effective_chat.id, text="Listing the contents of the inventory:\n" + str('\n'.join(inventory)) )
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
