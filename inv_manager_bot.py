@@ -6,11 +6,11 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
-f = open("dnd_inventory.txt", "r")
+
 inventory = []
-for line in f:
-    inventory.append(line.rstrip())
-f.close()
+with open("dnd_inventory.txt", "r") as f:
+    for line in f:
+        inventory.append(line.rstrip())
 
 help_add = "/add <item> adds an item to the inventory.\n"
 help_remove = "/remove <item> removes an item from the inventory. If the item cannot be found, it does nothing.\n"
@@ -25,10 +25,9 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_add = ' '.join(context.args)
     inventory.append(text_add)
-    f = open("dnd_inventory.txt", "w")
-    for item in inventory:
-        f.write("%s\n" % item)
-    f.close()
+    with open("dnd_inventory.txt", "w") as f:
+        for item in inventory:
+            f.write("%s\n" % item)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add + " added to inventory")
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -36,10 +35,9 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     answer_text = text_remove + " removed from inventory"
     try:
         inventory.remove(text_remove)
-        f = open("dnd_inventory.txt", "w")
-        for item in inventory:
-            f.write("%s\n" % item)
-        f.close()
+        with open("dnd_inventory.txt", "w") as f:
+            for item in inventory:
+                f.write("%s\n" % item)
     except ValueError:
         answer_text = "No such item in the inventory :("
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer_text)
