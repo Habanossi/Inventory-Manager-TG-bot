@@ -1,6 +1,6 @@
 import logging
-from telegram import Update
-from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -31,33 +31,37 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add + " added to inventory")
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text_remove = ' '.join(context.args)
+    query = update.callback_query
+    await query.answer()
+
+    text_remove = query.data if query.data else ' '.joint(context.args)
 
     try:
 
-            if text_remove.isnumeric():
-                i = int(text_remove)
-                answer_text = inventory[i] + " removed from inventory"
-                inventory.pop(i)
-            else:
-                answer_text = text_remove + " removed from inventory"
-                inventory.remove(text_remove)
-            with open("dnd_inventory.txt", "w") as f:
-                for item in inventory:
-                    f.write("%s\n" % item)
+        if text_remove.isnumeric():
+            i = int(text_remove)
+            answer_text = inventory[i] + " removed from inventory"
+            inventory.pop(i)
+        else:
+            answer_text = text_remove + " removed from inventory"
+            inventory.remove(text_remove)
+        with open("dnd_inventory.txt", "w") as f:
+            for item in inventory:
+                f.write("%s\n" % item)
     except ValueError:
         answer_text = "No such item in the inventory :("
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text = "Bag of holding: \n"
-    for i, item in enumerate(inventory):
-        text += f"{i}: {item}\n"
-    print(inventory) # Debugging
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
+    buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
+
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   reply_markup=InlineKeyboardMarkup(buttons),  text="Bag of holding: \n")
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Sorry, I didn't understand that command.")
+
 
 if __name__ == '__main__':
     application = ApplicationBuilder().token('5645648762:AAEMthbux7lswfGP210SGLTTYqUTiKtOLC4').build()
@@ -79,11 +83,14 @@ if __name__ == '__main__':
     application.add_handler(remove_handler)
 
     #list command
-    list_handler = CommandHandler('list', list)
+    list_handler = CommandHandler({'list','ls'}, list)
     application.add_handler(list_handler)
 
     #unknown commands
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
     application.add_handler(unknown_handler)
+
+    remove_handler = CallbackQueryHandler(remove)
+    application.add_handler(remove_handler)
     
     application.run_polling()
