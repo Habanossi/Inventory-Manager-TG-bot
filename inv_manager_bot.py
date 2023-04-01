@@ -37,26 +37,28 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_remove = query.data if query.data else ' '.joint(context.args)
 
     try:
-
         if text_remove.isnumeric():
-            i = int(text_remove)
-            answer_text = inventory[i] + " removed from inventory"
-            inventory.pop(i)
-        else:
-            answer_text = text_remove + " removed from inventory"
-            inventory.remove(text_remove)
+            text_remove = inventory[int(text_remove)]
+
+        answer_text = text_remove + " removed from inventory"
+
+        inventory.remove(text_remove)
+
         with open("dnd_inventory.txt", "w") as f:
             for item in inventory:
                 f.write("%s\n" % item)
-    except ValueError:
+    except (ValueError, IndexError):
         answer_text = "No such item in the inventory :("
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=answer_text)
+
+    inventory_buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   reply_markup=InlineKeyboardMarkup(inventory_buttons), text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
+    inventory_buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   reply_markup=InlineKeyboardMarkup(buttons),  text="Bag of holding: \n")
+                                   reply_markup=InlineKeyboardMarkup(inventory_buttons),  text="Bag of holding: \n")
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
