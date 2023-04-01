@@ -32,19 +32,29 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_remove = ' '.join(context.args)
-    answer_text = text_remove + " removed from inventory"
+
     try:
-        inventory.remove(text_remove)
-        with open("dnd_inventory.txt", "w") as f:
-            for item in inventory:
-                f.write("%s\n" % item)
+
+            if text_remove.isnumeric():
+                i = int(text_remove)
+                answer_text = inventory[i] + " removed from inventory"
+                inventory.pop(i)
+            else:
+                answer_text = text_remove + " removed from inventory"
+                inventory.remove(text_remove)
+            with open("dnd_inventory.txt", "w") as f:
+                for item in inventory:
+                    f.write("%s\n" % item)
     except ValueError:
         answer_text = "No such item in the inventory :("
     await context.bot.send_message(chat_id=update.effective_chat.id, text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    print(inventory)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Listing the contents of the inventory: " + str(', '.join(inventory)) )
+    text = "Bag of holding: \n"
+    for i, item in enumerate(inventory):
+        text += f"{i}: {item}\n"
+    print(inventory) # Debugging
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text)
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
