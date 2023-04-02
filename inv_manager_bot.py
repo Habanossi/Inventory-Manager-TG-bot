@@ -38,8 +38,9 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         kb_layout = [[f"/add {query.data}"], [f"/remove {query.data}"]]
         keyboard = ReplyKeyboardMarkup(kb_layout,
                                        one_time_keyboard=True,
+                                       selective=True,
                                        resize_keyboard=True)
-        await context.bot.send_message(text="Choose an option",
+        await context.bot.send_message(text=f"@{query.from_user.username} is shuffling the Bag of Holding",
                                  chat_id=update.effective_chat.id,
                                  reply_markup=keyboard)
 
@@ -64,8 +65,8 @@ async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for arr in inventory_buttons:
         if 0 in arr: arr.remove(0)
 
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   reply_markup=InlineKeyboardMarkup(inventory_buttons),  text="Bag of holding: \n")
+    await update.message.reply_text(reply_markup=InlineKeyboardMarkup(inventory_buttons),
+                                    text="Bag of Holding:\n")
 
 async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,

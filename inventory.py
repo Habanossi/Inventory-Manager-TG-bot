@@ -34,7 +34,7 @@ class Inventory:
                 self.items.append(Item(item_name, amount))
             
             self.write_inventory()
-            return f"{item_name} added to inventory"
+            return f"'{item_name}' added to inventory"
 
     def remove(self, item, amount=1):
         # Option for selecting item by index (int)
@@ -42,7 +42,7 @@ class Inventory:
             try:
                 item_name = self.get_items()[int(item)].get_name()
             except IndexError:
-                return f"{item} is not a valid index"
+                return f"'{item}' is not a valid index"
         else:
             item_name = item
 
@@ -50,7 +50,7 @@ class Inventory:
             return "Please enter a valid item to remove"
         # Remove <amount> from Item, if amount becomes < 1 remove the Item from array
         if not self.has_item(item_name):
-            return "No such item in the inventory :("
+            return f"'{item_name}' is not in the inventory :("
 
         for i, curr_item in enumerate(self.get_items()):
             if str(curr_item.get_name()) == item_name:
@@ -58,7 +58,7 @@ class Inventory:
                 if curr_item.get_amount() < 1:
                     self.items.pop(i)
                 self.write_inventory()
-                return f"{item_name} removed from inventory"
+                return f"'{item_name}' removed from inventory"
 
     def write_inventory(self):
         with open(self.inventory_file, "w") as f:
