@@ -1,14 +1,22 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
+import os.path
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
 
+inventory_file = "dnd_inventory.txt"
 inventory = []
-with open("dnd_inventory.txt", "r") as f:
+
+# Create an empty inventory file
+if not os.path.exists(inventory_file):
+    f = open(inventory_file, "w")
+    f.close()
+
+with open(inventory_file, "r") as f:
     for line in f:
         inventory.append(line.rstrip())
 
@@ -25,17 +33,31 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_add = ' '.join(context.args)
     inventory.append(text_add)
-    with open("dnd_inventory.txt", "w") as f:
+    with open(inventory_file, "w") as f:
         for item in inventory:
             f.write("%s\n" % item)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add + " added to inventory")
 
-async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    
+    if query.data in inventory:
+        # Ask what to do
+        kb_layout = [[f"/add {query.data}"], [f"/remove {query.data}"]]
+        keyboard = ReplyKeyboardMarkup(kb_layout, one_time_keyboard=True)
+        await context.bot.send_message(text="hello world",
+                                 chat_id=update.effective_chat.id,
+                                 reply_markup=keyboard)
 
-    text_remove = query.data if query.data else ' '.joint(context.args)
+    #answer_text = text_remove + " removed from inventory"
+    #inventory_buttons = [[InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}")] for i, item in enumerate(inventory)]
+    #await context.bot.send_message(chat_id=update.effective_chat.id,
+    #                               text=answer_text)
 
+async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    text_remove = ' '.join(context.args)
     try:
         if text_remove.isnumeric():
             text_remove = inventory[int(text_remove)]
@@ -44,18 +66,18 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         inventory.remove(text_remove)
 
-        with open("dnd_inventory.txt", "w") as f:
+        with open(inventory_file, "w") as f:
             for item in inventory:
                 f.write("%s\n" % item)
     except (ValueError, IndexError):
         answer_text = "No such item in the inventory :("
 
-    inventory_buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
+
     await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   reply_markup=InlineKeyboardMarkup(inventory_buttons), text=answer_text)
+                                   text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = [[InlineKeyboardButton(item, callback_data=f"{i}")] for i, item in enumerate(inventory)]
+    inventory_buttons = [[InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}")] for i, item in enumerate(inventory)]
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    reply_markup=InlineKeyboardMarkup(inventory_buttons),  text="Bag of holding: \n")
@@ -92,7 +114,7 @@ if __name__ == '__main__':
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
     application.add_handler(unknown_handler)
 
-    remove_handler = CallbackQueryHandler(remove)
-    application.add_handler(remove_handler)
+    remove_button_handler = CallbackQueryHandler(remove_button)
+    application.add_handler(remove_button_handler)
     
     application.run_polling()
