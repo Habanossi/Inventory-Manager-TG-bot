@@ -2,6 +2,8 @@ import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 import os.path
+import numpy as np
+from math import ceil
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -77,7 +79,17 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = [[InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}")] for i, item in enumerate(inventory)]
+    inventory_buttons = np.array([InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}") for i, item in enumerate(inventory)])
+    # 2 columns if more than 10 elements
+    if len(inventory_buttons) > 10: 
+        m, n = ceil(len(inventory_buttons)/2), 2 
+    else:
+        m, n = len(inventory_buttons), 1
+    inventory_buttons.resize(m, n)
+    inventory_buttons = inventory_buttons.tolist()
+
+    for arr in inventory_buttons:
+        if 0 in arr: arr.remove(0)
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    reply_markup=InlineKeyboardMarkup(inventory_buttons),  text="Bag of holding: \n")
