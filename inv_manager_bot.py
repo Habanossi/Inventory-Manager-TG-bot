@@ -1,8 +1,8 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
-import os.path
 import numpy as np
+from inventory import Inventory
 from math import ceil
 
 logging.basicConfig(
@@ -11,16 +11,7 @@ logging.basicConfig(
 )
 
 inventory_file = "dnd_inventory.txt"
-inventory = []
-
-# Create an empty inventory file
-if not os.path.exists(inventory_file):
-    f = open(inventory_file, "w")
-    f.close()
-
-with open(inventory_file, "r") as f:
-    for line in f:
-        inventory.append(line.rstrip())
+inventory = Inventory(inventory_file)
 
 help_add = "/add <item> adds an item to the inventory.\n"
 help_remove = "/remove <item> removes an item from the inventory. If the item cannot be found, it does nothing.\n"
@@ -33,60 +24,42 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text= help_add + help_remove + help_list)
 
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    text_add = ' '.join(context.args)
-    inventory.append(text_add)
-    with open(inventory_file, "w") as f:
-        for item in inventory:
-            f.write("%s\n" % item)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add + " added to inventory")
+    item = ' '.join(context.args)
+    text_add = inventory.add(item)
+    await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add)
 
 
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     
-    if query.data in inventory:
+    if inventory.has_item(query.data):
         # Ask what to do
         kb_layout = [[f"/add {query.data}"], [f"/remove {query.data}"]]
-        keyboard = ReplyKeyboardMarkup(kb_layout, one_time_keyboard=True)
-        await context.bot.send_message(text="hello world",
+        keyboard = ReplyKeyboardMarkup(kb_layout,
+                                       one_time_keyboard=True,
+                                       resize_keyboard=True)
+        await context.bot.send_message(text="Choose an option",
                                  chat_id=update.effective_chat.id,
                                  reply_markup=keyboard)
 
-    #answer_text = text_remove + " removed from inventory"
-    #inventory_buttons = [[InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}")] for i, item in enumerate(inventory)]
-    #await context.bot.send_message(chat_id=update.effective_chat.id,
-    #                               text=answer_text)
-
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_remove = ' '.join(context.args)
-    try:
-        if text_remove.isnumeric():
-            text_remove = inventory[int(text_remove)]
-
-        answer_text = text_remove + " removed from inventory"
-
-        inventory.remove(text_remove)
-
-        with open(inventory_file, "w") as f:
-            for item in inventory:
-                f.write("%s\n" % item)
-    except (ValueError, IndexError):
-        answer_text = "No such item in the inventory :("
+    answer_text = inventory.remove(text_remove)
 
 
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = np.array([InlineKeyboardButton(f"{i}: {item}", callback_data=f"{item}") for i, item in enumerate(inventory)])
+    inventory_buttons = np.array([InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"{item.get_name()}") for i, item in enumerate(inventory.get_items())])
     # 2 columns if more than 10 elements
     if len(inventory_buttons) > 10: 
-        m, n = ceil(len(inventory_buttons)/2), 2 
+        m, n = 2, ceil(len(inventory_buttons)/2)
     else:
-        m, n = len(inventory_buttons), 1
+        m, n = 1, len(inventory_buttons)
     inventory_buttons.resize(m, n)
-    inventory_buttons = inventory_buttons.tolist()
+    inventory_buttons = inventory_buttons.T.tolist()
 
     for arr in inventory_buttons:
         if 0 in arr: arr.remove(0)
