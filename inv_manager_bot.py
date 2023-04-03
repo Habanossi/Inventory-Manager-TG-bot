@@ -14,7 +14,7 @@ inventory_file = "dnd_inventory.txt"
 inventory = Inventory(inventory_file)
 
 help_add = "/add <item> adds an item to the inventory.\n"
-help_remove = "/remove <item> removes an item from the inventory. If the item cannot be found, it does nothing.\n"
+help_remove = "/remove <item/index> removes an item from the inventory. If the item cannot be found, it does nothing.\n"
 help_list = "/list prints a list of the inventory contents."
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -32,17 +32,29 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    
-    if inventory.has_item(query.data):
-        # Ask what to do
-        kb_layout = [[f"/add {query.data}"], [f"/remove {query.data}"]]
-        keyboard = ReplyKeyboardMarkup(kb_layout,
-                                       one_time_keyboard=True,
-                                       selective=True,
-                                       resize_keyboard=True)
-        await context.bot.send_message(text=f"@{query.from_user.username} is shuffling the Bag of Holding",
-                                 chat_id=update.effective_chat.id,
-                                 reply_markup=keyboard)
+    try:
+        print(query.data)
+        cmd, item_name, item_amount  = query.data.split(":")
+    except IndexError:
+        cmd, item_name, item_amount = ["","",""]
+
+    if cmd == "add":
+        text_add = inventory.add(item_name, item_amount)
+        keyboard = get_inventory_buttons(inventory)
+        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+    elif cmd == "remove":
+        text_add = inventory.remove(item_name, item_amount)
+        keyboard = get_inventory_buttons(inventory)
+        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+    elif cmd == "cancel":
+        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+    elif cmd == "itemlist":
+        keyboard =[[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1")],
+                    [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2")],
+                    [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5")],
+                    [InlineKeyboardButton("CANCEL", callback_data="cancel::")]]
+        await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
+
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_remove = ' '.join(context.args)
@@ -53,7 +65,19 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = np.array([InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"{item.get_name()}") for i, item in enumerate(inventory.get_items())])
+    inventory_buttons = get_inventory_buttons(inventory)
+
+    await update.message.reply_text(reply_markup=InlineKeyboardMarkup(inventory_buttons),
+                                    text="Bag of Holding:\n")
+
+async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Sorry, I didn't understand that command.")
+
+def get_inventory_buttons(inventory):
+    inventory_buttons = np.array(
+        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"itemlist:{item.get_name()}:") for i, item in enumerate(inventory.get_items())]
+        )
     # 2 columns if more than 10 elements
     if len(inventory_buttons) > 10: 
         m, n = 2, ceil(len(inventory_buttons)/2)
@@ -64,17 +88,20 @@ async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for arr in inventory_buttons:
         if 0 in arr: arr.remove(0)
+    
+    return inventory_buttons
 
-    await update.message.reply_text(reply_markup=InlineKeyboardMarkup(inventory_buttons),
-                                    text="Bag of Holding:\n")
-
-async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id,
-                                   text="Sorry, I didn't understand that command.")
+async def get_inline_kb(query, bot, keyboard, text):
+    await bot.edit_message_text(chat_id=query.message.chat_id,
+                                                message_id=query.message.id,
+                                                text=f"{text}")
+    await bot.edit_message_reply_markup(chat_id=query.message.chat_id,
+                                                message_id=query.message.id,
+                                                reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('5645648762:AAEMthbux7lswfGP210SGLTTYqUTiKtOLC4').build()
+    application = ApplicationBuilder().token('5604547968:AAEvBmmrMOKTeSUdVXvW0zjQNWL1Agkhat4').build()
     
     #start command 
     start_handler = CommandHandler('start', start)

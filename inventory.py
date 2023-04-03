@@ -83,7 +83,7 @@ class Item:
         self.amount += int(amount)
 
     def remove(self, amount=1): 
-        self.amount = max(self.amount - amount, 0)
+        self.amount = max(self.amount - int(amount), 0)
     
     # Accessors
     def get_name(self):
