@@ -74,7 +74,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('5645648762:AAEMthbux7lswfGP210SGLTTYqUTiKtOLC4').build()
+    application = ApplicationBuilder().token('token_here').build()
     
     #start command 
     start_handler = CommandHandler('start', start)
