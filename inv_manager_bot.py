@@ -4,6 +4,7 @@ from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTyp
 import numpy as np
 from inventory import Inventory
 from math import ceil
+from bot_token import token
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -101,7 +102,7 @@ async def get_inline_kb(query, bot, keyboard, text):
 
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('token_here').build()
+    application = ApplicationBuilder().token(token).build()
     
     #start command 
     start_handler = CommandHandler('start', start)
