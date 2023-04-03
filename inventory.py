@@ -1,8 +1,14 @@
 import os.path
+import logging
 
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
 
 class Inventory:
     def __init__(self, inventory_file):
+        logging.info("Started bot")
         self.items = []
         self.inventory_file = inventory_file
         if not os.path.exists(self.inventory_file):
@@ -17,9 +23,16 @@ class Inventory:
                 except IndexError:
                     item_amount = 1
                 self.items.append(Item(item_name.strip(), item_amount))
-    
+
+    def __str__(self):
+        s = "\n"
+        for item in self.items:
+            s += f"\t\t\t\t\t{item.name} x {item.amount}\n"
+        return s
+
     def add(self, item_name, amount=1):
         if item_name == "":
+            logging.info("Tried to add item with no name.")
             return "Please enter a valid item to add"
         else:
             # If in items, add amount
@@ -32,9 +45,12 @@ class Inventory:
             # If not in items, add to items
             if not found:
                 self.items.append(Item(item_name, amount))
+                logging.info(f"Added new item: {item_name} to the Inventory")
+            else:
+                logging.info(f"Added {amount} of item {item_name} to the Inventory")
             
             self.write_inventory()
-            return f"'{item_name}' added to inventory"
+            return f"'{item_name}' added to Inventory"
 
     def remove(self, item, amount=1):
         # Option for selecting item by index (int)
@@ -47,9 +63,11 @@ class Inventory:
             item_name = item
 
         if item_name == "":
+            logging.info(f"Tried to remove item with no name")
             return "Please enter a valid item to remove"
         # Remove <amount> from Item, if amount becomes < 1 remove the Item from array
         if not self.has_item(item_name):
+            logging.info(f"Tried to remove item {item_name}, which is not in the Inventory")
             return f"'{item_name}' is not in the inventory :("
 
         for i, curr_item in enumerate(self.get_items()):
@@ -81,9 +99,11 @@ class Item:
     
     def add(self, amount=1):
         self.amount += int(amount)
+        logging.info(f"Added {amount} of item {self.name} to the Inventory, now {self.amount}")
 
     def remove(self, amount=1): 
         self.amount = max(self.amount - int(amount), 0)
+        logging.info(f"Removed {amount} of item {self.name} from the Inventory, now {self.amount}")
     
     # Accessors
     def get_name(self):
