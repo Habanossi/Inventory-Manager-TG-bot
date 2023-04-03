@@ -50,7 +50,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id, text="Sorry, I didn't understand that command.")
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('5645648762:AAEMthbux7lswfGP210SGLTTYqUTiKtOLC4').build()
+    application = ApplicationBuilder().token('put_token_here').build()
     
     #start command 
     start_handler = CommandHandler('start', start)
