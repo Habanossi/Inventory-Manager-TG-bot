@@ -33,12 +33,18 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-    keyboard = get_inventory_buttons(inventory)
     try:
-        cmd, item_name, item_amount  = query.data.split(":")
+        cmd, item_name, item_amount, msg_id  = query.data.split(":")
     except IndexError:
-        cmd, item_name, item_amount = ["","",""]
+        cmd, item_name, item_amount, msg_id = ["","","",""]
 
+    keyboard = get_inventory_buttons(inventory, msg_id)
+    print("MSG_ID: ",item_name, msg_id)
+
+    #q = query.message.chat_id
+    #for m in dir(q):
+    #    print(m)
+    #print(q)
     if cmd == "add":
         text_add = inventory.add(item_name, item_amount)
         await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
@@ -49,11 +55,13 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
     elif cmd == "close":
         await query.message.delete()
+        await context.bot.delete_message(chat_id=query.message.chat_id,
+                                         message_id=msg_id)
     elif cmd == "itemlist":
-        keyboard =[[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1")],
-                    [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2")],
-                    [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5")],
-                    [InlineKeyboardButton("CANCEL", callback_data="cancel::")]]
+        keyboard =[[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1:{msg_id}"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1:{msg_id}")],
+                    [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2:{msg_id}"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2:{msg_id}")],
+                    [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5:{msg_id}"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5:{msg_id}")],
+                    [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
         await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
 
 
@@ -66,7 +74,7 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=answer_text)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = get_inventory_buttons(inventory)
+    inventory_buttons = get_inventory_buttons(inventory, update.message.id)
 
     await update.message.reply_text(reply_markup=InlineKeyboardMarkup(inventory_buttons),
                                     text="Bag of Holding:\n")
@@ -75,9 +83,9 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Sorry, I didn't understand that command.")
 
-def get_inventory_buttons(inventory):
+def get_inventory_buttons(inventory, msg_id=""):
     inventory_buttons = np.array(
-        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"itemlist:{item.get_name()}:{item.get_amount()}") for i, item in enumerate(inventory.get_items())]
+        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"itemlist:{item.get_name()}:{item.get_amount()}:{msg_id}") for i, item in enumerate(inventory.get_items())]
         )
     # 2 columns if more than 10 elements
     if len(inventory_buttons) > 10: 
@@ -90,7 +98,7 @@ def get_inventory_buttons(inventory):
     for arr in inventory_buttons:
         if 0 in arr: arr.remove(0)
     
-    inventory_buttons.append([InlineKeyboardButton("CLOSE", callback_data="close::")])
+    inventory_buttons.append([InlineKeyboardButton("CLOSE", callback_data=f"close:::{msg_id}")])
     return inventory_buttons
 
 async def get_inline_kb(query, bot, keyboard, text):
