@@ -101,7 +101,7 @@ async def get_inline_kb(query, bot, keyboard, text):
 
 
 if __name__ == '__main__':
-    application = ApplicationBuilder().token('5604547968:AAEvBmmrMOKTeSUdVXvW0zjQNWL1Agkhat4').build()
+    application = ApplicationBuilder().token('token_here').build()
     
     #start command 
     start_handler = CommandHandler('start', start)
