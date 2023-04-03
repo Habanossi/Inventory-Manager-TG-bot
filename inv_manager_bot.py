@@ -38,21 +38,15 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     except IndexError:
         cmd, item_name, item_amount, msg_id = ["","","",""]
 
-    keyboard = get_inventory_buttons(inventory, msg_id)
-    print("MSG_ID: ",item_name, msg_id)
 
-    #q = query.message.chat_id
-    #for m in dir(q):
-    #    print(m)
-    #print(q)
     if cmd == "add":
         text_add = inventory.add(item_name, item_amount)
-        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
     elif cmd == "remove":
         text_add = inventory.remove(item_name, item_amount)
-        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
     elif cmd == "cancel":
-        await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
     elif cmd == "close":
         await query.message.delete()
         await context.bot.delete_message(chat_id=query.message.chat_id,
