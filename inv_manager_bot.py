@@ -33,22 +33,22 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
+    keyboard = get_inventory_buttons(inventory)
     try:
-        print(query.data)
         cmd, item_name, item_amount  = query.data.split(":")
     except IndexError:
         cmd, item_name, item_amount = ["","",""]
 
     if cmd == "add":
         text_add = inventory.add(item_name, item_amount)
-        keyboard = get_inventory_buttons(inventory)
         await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
     elif cmd == "remove":
         text_add = inventory.remove(item_name, item_amount)
-        keyboard = get_inventory_buttons(inventory)
         await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
     elif cmd == "cancel":
         await get_inline_kb(query, context.bot, keyboard, "Bag of Holding:")
+    elif cmd == "close":
+        await query.message.delete()
     elif cmd == "itemlist":
         keyboard =[[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1")],
                     [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2")],
@@ -77,7 +77,7 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 def get_inventory_buttons(inventory):
     inventory_buttons = np.array(
-        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"itemlist:{item.get_name()}:") for i, item in enumerate(inventory.get_items())]
+        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"itemlist:{item.get_name()}:{item.get_amount()}") for i, item in enumerate(inventory.get_items())]
         )
     # 2 columns if more than 10 elements
     if len(inventory_buttons) > 10: 
@@ -90,6 +90,7 @@ def get_inventory_buttons(inventory):
     for arr in inventory_buttons:
         if 0 in arr: arr.remove(0)
     
+    inventory_buttons.append([InlineKeyboardButton("CLOSE", callback_data="close::")])
     return inventory_buttons
 
 async def get_inline_kb(query, bot, keyboard, text):
