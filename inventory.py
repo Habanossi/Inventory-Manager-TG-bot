@@ -1,10 +1,12 @@
 import os.path
 import logging
 
+
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     level=logging.INFO
 )
+
 
 class Inventory:
     def __init__(self, inventory_file):
@@ -12,8 +14,9 @@ class Inventory:
         self.items = []
         self.inventory_file = inventory_file
         if not os.path.exists(self.inventory_file):
-            f = open(self.inventory_file, "w")
+            f = open(self.inventory_file, "w+")
             f.close()
+
         with open(self.inventory_file, "r") as f:
             for line in f:
                 line_split = line.split(",")
@@ -48,7 +51,7 @@ class Inventory:
                 logging.info(f"Added new item: {item_name} to the Inventory")
             else:
                 logging.info(f"Added {amount} of item {item_name} to the Inventory")
-            
+
             self.write_inventory()
             return f"'{item_name}' added to Inventory"
 
@@ -63,7 +66,7 @@ class Inventory:
             item_name = item
 
         if item_name == "":
-            logging.info(f"Tried to remove item with no name")
+            logging.info("Tried to remove item with no name")
             return "Please enter a valid item to remove"
         # Remove <amount> from Item, if amount becomes < 1 remove the Item from array
         if not self.has_item(item_name):
@@ -83,32 +86,33 @@ class Inventory:
             for curr_item in self.get_items():
                 f.write(f"{curr_item.get_name()},{curr_item.get_amount()}\n")
 
-
     def has_item(self, item_name):
-        found = False
         item_names = [str(item.get_name()) for item in self.get_items()]
         return item_name in item_names
-                
+
     def get_items(self):
         return self.items
+
 
 class Item:
     def __init__(self, name, amount=1):
         self.name = name
         self.amount = int(amount)
-    
+
     def add(self, amount=1):
         self.amount += int(amount)
         logging.info(f"Added {amount} of item {self.name} to the Inventory, now {self.amount}")
 
-    def remove(self, amount=1): 
+    def remove(self, amount=1):
         self.amount = max(self.amount - int(amount), 0)
         logging.info(f"Removed {amount} of item {self.name} from the Inventory, now {self.amount}")
-    
+
     # Accessors
     def get_name(self):
         return self.name
+
     def get_amount(self):
         return self.amount
+
     def __str__(self):
         return self.get_name()
