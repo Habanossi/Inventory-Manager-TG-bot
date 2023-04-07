@@ -1,10 +1,9 @@
 import logging
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
-import numpy as np
 from inventory import Inventory
-from math import ceil
 from bot_token import token
+from includes.helpers import get_inventory_buttons, get_inline_kb
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -58,7 +57,7 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         sticker_id = 'CAACAgQAAxkBAAIBsGQwiKNjerbplYTqG8-jZ9hHJBSlAAKLDQACftTxUtY7qzVqXQABVS8E'
         await query.message.delete()
         await context.bot.send_sticker(chat_id=update.effective_chat.id,
-                                    sticker=sticker_id,)
+                                       sticker=sticker_id,)
         # await context.bot.delete_message(chat_id=query.message.chat_id,
         #                                  message_id=msg_id)
         logging.info(f"{query.message.from_user.first_name} closed inline keyboard message")
@@ -96,35 +95,6 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text="Sorry, I didn't understand that command.")
 
     logging.info(f"{update.message.from_user.first_name} said an unknown command")
-
-
-def get_inventory_buttons(inventory, msg_id=""):
-    inventory_buttons = np.array(
-        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"edit:{item.get_name()}:{item.get_amount()}:{msg_id}") for i, item in enumerate(inventory.get_items())]
-        )
-    # 2 columns if more than 10 elements
-    if len(inventory_buttons) > 10:
-        m, n = 2, ceil(len(inventory_buttons)/2)
-    else:
-        m, n = 1, len(inventory_buttons)
-    inventory_buttons.resize(m, n)
-    inventory_buttons = inventory_buttons.T.tolist()
-
-    for arr in inventory_buttons:
-        if 0 in arr:
-            arr.remove(0)
-
-    inventory_buttons.append([InlineKeyboardButton("CLOSE", callback_data=f"close:::{msg_id}")])
-    return inventory_buttons
-
-
-async def get_inline_kb(query, bot, keyboard, text):
-    await bot.edit_message_text(chat_id=query.message.chat_id,
-                                message_id=query.message.id,
-                                text=f"{text}")
-    await bot.edit_message_reply_markup(chat_id=query.message.chat_id,
-                                        message_id=query.message.id,
-                                        reply_markup=InlineKeyboardMarkup(keyboard))
 
 
 if __name__ == '__main__':
