@@ -1,7 +1,8 @@
 import numpy as np
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from math import ceil
-
+import json
+import random
 
 def get_inventory_buttons(inventory, msg_id=""):
     inventory_buttons = np.array(
@@ -30,3 +31,10 @@ async def get_inline_kb(query, bot, keyboard, text):
     await bot.edit_message_reply_markup(chat_id=query.message.chat_id,
                                         message_id=query.message.id,
                                         reply_markup=InlineKeyboardMarkup(keyboard))
+
+def get_sticker(username):
+    with open("includes/stickers.json", "r") as f:
+        data = json.load(f)
+    return random.choice(data[username])
+
+get_sticker("Flavionator")

@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 from inventory import Inventory
 from bot_token import token
-from includes.helpers import get_inventory_buttons, get_inline_kb
+from includes.helpers import get_inventory_buttons, get_inline_kb, get_sticker
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -33,16 +33,6 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_add = inventory.add(item)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add)
 
-sticker_id = {
-    "peppelonee": "CAACAgQAAxkBAAEfaiVkMJVGBO6oKrrFkG6tASdvnT1xHQACZgsAAq4YUVPH5AABzyjs59gvBA",
-    "Pappdiin": "CAACAgQAAxkBAAEfai9kMJZQzMf4mfMnYVtlWkHRG8WUJgACJQADRuwpB2mQeSKZGMCXLwQ",
-    "Machofantastic": "CAACAgQAAxkBAAEfajFkMJadsWAAAeRe3pLHn3mAxf9ypH4AAgkAA8305RmawlPVlpEBIC8E",
-    "Inqsu": "CAACAgQAAxkBAAEfajdkMJc4yZ2s-c1EA733MHPhUIw-ggACtgADOvl8BvuMEybh1KtSLwQ",
-    "sammoa": "CAACAgQAAxkBAAEfrRFkOBQX7Hc7uf8XPq-Xm7mWVH0VGAACEwEAAjr5fAZ2n_qDEBAtLi8E",
-    "Flavionator": "CAACAgQAAxkBAAEfailkMJYFYt1exAwQ9m34WfUPLZNXvQACKAgAAvsmYFMor2qpVjRjBi8E",
-}
-        #sticker_id = 'CAACAgQAAxkBAAIBsGQwiKNjerbplYTqG8-jZ9hHJBSlAAKLDQACftTxUtY7qzVqXQABVS8E'
-
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
@@ -66,7 +56,7 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await query.message.delete()
         try:
             await context.bot.send_sticker(chat_id=update.effective_chat.id,
-                                            sticker=sticker_id[query.from_user.username])
+                                            sticker=get_sticker(query.from_user.username))
             logging.info(f"{query.from_user.first_name} closed inline keyboard message")
         except:
             logging.info(f"{query.from_user.username} is not in dictionary")
@@ -105,6 +95,8 @@ async def unknown(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await context.bot.send_message(chat_id=update.effective_chat.id,
                                    text="Sorry, I didn't understand that command.")
 
+    await context.bot.send_sticker(chat_id=update.effective_chat.id,
+                                    sticker="CAACAgQAAxkBAAEfsD5kOFdhSaR9KVb5Dmh-WCIp2qXazwACGgADJs3kCe-TNadhbGRuLwQ",)
     logging.info(f"{update.message.from_user.first_name} said an unknown command")
 
 
