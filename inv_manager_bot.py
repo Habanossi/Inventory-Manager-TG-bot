@@ -33,6 +33,15 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text_add = inventory.add(item)
     await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add)
 
+sticker_id = {
+    "peppelonee": "CAACAgQAAxkBAAEfaiVkMJVGBO6oKrrFkG6tASdvnT1xHQACZgsAAq4YUVPH5AABzyjs59gvBA",
+    "Pappdiin": "CAACAgQAAxkBAAEfai9kMJZQzMf4mfMnYVtlWkHRG8WUJgACJQADRuwpB2mQeSKZGMCXLwQ",
+    "Machofantastic": "CAACAgQAAxkBAAEfajFkMJadsWAAAeRe3pLHn3mAxf9ypH4AAgkAA8305RmawlPVlpEBIC8E",
+    "Inqsu": "CAACAgQAAxkBAAEfajdkMJc4yZ2s-c1EA733MHPhUIw-ggACtgADOvl8BvuMEybh1KtSLwQ",
+    "sammoa": "CAACAgQAAxkBAAEfrRFkOBQX7Hc7uf8XPq-Xm7mWVH0VGAACEwEAAjr5fAZ2n_qDEBAtLi8E",
+    "Flavionator": "CAACAgQAAxkBAAEfailkMJYFYt1exAwQ9m34WfUPLZNXvQACKAgAAvsmYFMor2qpVjRjBi8E",
+}
+        #sticker_id = 'CAACAgQAAxkBAAIBsGQwiKNjerbplYTqG8-jZ9hHJBSlAAKLDQACftTxUtY7qzVqXQABVS8E'
 
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -45,29 +54,31 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if cmd == "add":
         inventory.add(item_name, item_amount)
         await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
-        logging.info(f"{query.message.from_user.first_name} added {item_amount} of {item_name} - {msg_id}")
+        logging.info(f"{query.from_user.first_name} added {item_amount} of {item_name} - {msg_id}")
     elif cmd == "remove":
         inventory.remove(item_name, item_amount)
         await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
-        logging.info(f"{query.message.from_user.first_name} removed {item_amount} of {item_name} - {msg_id}")
+        logging.info(f"{query.from_user.first_name} removed {item_amount} of {item_name} - {msg_id}")
     elif cmd == "cancel":
         await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
-        logging.info(f"{query.message.from_user.first_name} canceled edit screen")
+        logging.info(f"{query.from_user.first_name} canceled edit screen")
     elif cmd == "close":
-        sticker_id = 'CAACAgQAAxkBAAIBsGQwiKNjerbplYTqG8-jZ9hHJBSlAAKLDQACftTxUtY7qzVqXQABVS8E'
         await query.message.delete()
-        await context.bot.send_sticker(chat_id=update.effective_chat.id,
-                                       sticker=sticker_id,)
+        try:
+            await context.bot.send_sticker(chat_id=update.effective_chat.id,
+                                            sticker=sticker_id[query.from_user.username])
+            logging.info(f"{query.from_user.first_name} closed inline keyboard message")
+        except:
+            logging.info(f"{query.from_user.username} is not in dictionary")
         # await context.bot.delete_message(chat_id=query.message.chat_id,
         #                                  message_id=msg_id)
-        logging.info(f"{query.message.from_user.first_name} closed inline keyboard message")
     elif cmd == "edit":
         keyboard = [[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1:{msg_id}"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1:{msg_id}")],
                     [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2:{msg_id}"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2:{msg_id}")],
                     [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5:{msg_id}"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5:{msg_id}")],
                     [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
         await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
-        logging.info(f"{query.message.from_user.first_name} wants to edit {item_name} - {msg_id}")
+        logging.info(f"{query.from_user.first_name} wants to edit {item_name} - {msg_id}")
 
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
