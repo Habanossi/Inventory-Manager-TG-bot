@@ -13,8 +13,14 @@ class Inventory:
         logging.info("Started bot")
         self.items = []
         self.inventory_file = inventory_file
+        self.pin_file = "./includes/pin_msg_id.txt"
+        self.msg_id = ""
+
         if not os.path.exists(self.inventory_file):
             f = open(self.inventory_file, "w+")
+            f.close()
+        if not os.path.exists(self.pin_file):
+            f = open(self.pin_file, "w+")
             f.close()
 
         with open(self.inventory_file, "r") as f:
@@ -26,11 +32,16 @@ class Inventory:
                 except IndexError:
                     item_amount = 1
                 self.items.append(Item(item_name.strip(), item_amount))
+        with open(self.pin_file, "r") as f:
+            self.msg_id = f.read()
+            print("MESSAGE_ID: ", self.msg_id)
+
+
 
     def __str__(self):
-        s = "\n"
+        s = "Bag of Holding:\n"
         for item in self.items:
-            s += f"\t\t\t\t\t{item.name} x {item.amount}\n"
+            s += f"\t{item.name}: x{item.amount}\n"
         return s
 
     def add(self, item_name, amount=1):
@@ -93,6 +104,13 @@ class Inventory:
     def get_items(self):
         return self.items
 
+    def set_msg_id(self, id):
+        self.msg_id = str(id)
+        with open(self.pin_file, "w") as f:
+            f.write(self.msg_id)
+
+    def get_msg_id(self):
+        return self.msg_id
 
 class Item:
     def __init__(self, name, amount=1):

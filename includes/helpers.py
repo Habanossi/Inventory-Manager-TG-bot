@@ -37,4 +37,8 @@ def get_sticker(username):
         data = json.load(f)
     return random.choice(data[username])
 
+def update_pin(update, context, inventory):
+    return context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                                    message_id=inventory.get_msg_id(),
+                                    text=str(inventory))
 get_sticker("Flavionator")

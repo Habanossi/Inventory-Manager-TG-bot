@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 from inventory import Inventory
 from bot_token import token
-from includes.helpers import get_inventory_buttons, get_inline_kb, get_sticker
+from includes.helpers import get_inventory_buttons, get_inline_kb, get_sticker, update_pin
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -19,11 +19,13 @@ help_list = "/list prints a list of the inventory contents."
 
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text="Hello, what do you want?")
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text="Hello, what do you want?")
 
 
 async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=help_add + help_remove + help_list)
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=help_add + help_remove + help_list)
 
     logging.info(f"{update.message.from_user.first_name} needed help")
 
@@ -31,7 +33,9 @@ async def help(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
     item = ' '.join(context.args)
     text_add = inventory.add(item)
-    await context.bot.send_message(chat_id=update.effective_chat.id, text=text_add)
+    await context.bot.send_message(chat_id=update.effective_chat.id,
+                                   text=text_add)
+
 
 async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -42,15 +46,24 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
         cmd, item_name, item_amount, msg_id = ["", "", "", ""]
 
     if cmd == "add":
-        inventory.add(item_name, item_amount)
-        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
-        logging.info(f"{query.from_user.first_name} added {item_amount} of {item_name} - {msg_id}")
+        inventory.add(item_name, int(item_amount))
+        await get_inline_kb(query,
+                            context.bot,
+                            get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
+        logging.info(
+                f"{query.from_user.first_name} added {item_amount} of {item_name} - {msg_id}"
+                )
     elif cmd == "remove":
-        inventory.remove(item_name, item_amount)
-        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
+        inventory.remove(item_name, int(item_amount))
+        await get_inline_kb(query, context.bot,
+                            get_inventory_buttons(inventory, msg_id),
+                            "Bag of Holding:")
         logging.info(f"{query.from_user.first_name} removed {item_amount} of {item_name} - {msg_id}")
     elif cmd == "cancel":
-        await get_inline_kb(query, context.bot, get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
+        await get_inline_kb(query,
+                            context.bot,
+                            get_inventory_buttons(inventory, msg_id),
+                            "Bag of Holding:")
         logging.info(f"{query.from_user.first_name} canceled edit screen")
     elif cmd == "close":
         await query.message.delete()
@@ -69,6 +82,7 @@ async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
                     [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
         await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
         logging.info(f"{query.from_user.first_name} wants to edit {item_name} - {msg_id}")
+    await update_pin(update, context, inventory)
 
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -82,8 +96,20 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logging.info(f"{update.message.from_user.first_name} removed {text_remove} - response: {answer_text}")
 
 
+async def list_raw(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat = await context.bot.get_chat(chat_id=update.effective_chat.id)
+    if inventory.get_msg_id() == "":
+        req = await context.bot.send_message(chat_id=update.effective_chat.id,
+                                       text=str(inventory))
+        inventory.set_msg_id(req.message_id)
+        await context.bot.pin_chat_message(chat_id=update.effective_chat.id,
+                                     message_id=req.message_id)
+    else:
+        await update_pin(update, context, inventory)
+
+
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    inventory_buttons = get_inventory_buttons(inventory, update.message.id)
+    inventory_buttons = get_inventory_buttons(inventory, str(update.message.id))
 
     await update.message.reply_text(reply_markup=InlineKeyboardMarkup(inventory_buttons),
                                     text="Bag of Holding:\n")
@@ -122,6 +148,10 @@ if __name__ == '__main__':
     # list command
     list_handler = CommandHandler({'list', 'ls'}, list)
     application.add_handler(list_handler)
+
+    # list command
+    list_raw_handler = CommandHandler({'list_raw'}, list_raw)
+    application.add_handler(list_raw_handler)
 
     # unknown commands
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
