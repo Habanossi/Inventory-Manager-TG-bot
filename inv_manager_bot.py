@@ -1,14 +1,9 @@
-import logging
+from http.client import BAD_REQUEST
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import filters, MessageHandler, ApplicationBuilder, ContextTypes, CommandHandler, CallbackQueryHandler
 from inventory import Inventory
 from bot_token import token
-from includes.helpers import get_inventory_buttons, get_inline_kb, get_sticker, update_pin
-
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
+from includes.helpers import get_inventory_buttons, get_inline_kb, get_sticker, update_pin, send_new_msg, logging
 
 inventory_file = "dnd_inventory.txt"
 inventory = Inventory(inventory_file)
@@ -37,52 +32,55 @@ async def add(update: Update, context: ContextTypes.DEFAULT_TYPE):
                                    text=text_add)
 
 
-async def remove_button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def bag_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     try:
         cmd, item_name, item_amount, msg_id = query.data.split(":")
     except IndexError:
         cmd, item_name, item_amount, msg_id = ["", "", "", ""]
-
-    if cmd == "add":
-        inventory.add(item_name, int(item_amount))
-        await get_inline_kb(query,
-                            context.bot,
-                            get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
-        logging.info(
-                f"{query.from_user.first_name} added {item_amount} of {item_name} - {msg_id}"
-                )
-    elif cmd == "remove":
-        inventory.remove(item_name, int(item_amount))
-        await get_inline_kb(query, context.bot,
-                            get_inventory_buttons(inventory, msg_id),
-                            "Bag of Holding:")
-        logging.info(f"{query.from_user.first_name} removed {item_amount} of {item_name} - {msg_id}")
-    elif cmd == "cancel":
-        await get_inline_kb(query,
-                            context.bot,
-                            get_inventory_buttons(inventory, msg_id),
-                            "Bag of Holding:")
-        logging.info(f"{query.from_user.first_name} canceled edit screen")
-    elif cmd == "close":
-        await query.message.delete()
-        try:
-            await context.bot.send_sticker(chat_id=update.effective_chat.id,
-                                            sticker=get_sticker(query.from_user.username))
-            logging.info(f"{query.from_user.first_name} closed inline keyboard message")
-        except:
-            logging.info(f"{query.from_user.username} is not in dictionary")
-        # await context.bot.delete_message(chat_id=query.message.chat_id,
-        #                                  message_id=msg_id)
-    elif cmd == "edit":
-        keyboard = [[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1:{msg_id}"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1:{msg_id}")],
-                    [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2:{msg_id}"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2:{msg_id}")],
-                    [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5:{msg_id}"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5:{msg_id}")],
-                    [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
-        await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
-        logging.info(f"{query.from_user.first_name} wants to edit {item_name} - {msg_id}")
-    await update_pin(update, context, inventory)
+    try:
+        if cmd == "add":
+            inventory.add(item_name, int(item_amount))
+            await get_inline_kb(query,
+                                context.bot,
+                                get_inventory_buttons(inventory, msg_id), "Bag of Holding:")
+            logging.info(
+                    f"{query.from_user.first_name} added {item_amount} of {item_name} - {msg_id}"
+                    )
+            await update_pin(update, context, inventory)
+        elif cmd == "remove":
+            inventory.remove(item_name, int(item_amount))
+            await get_inline_kb(query, context.bot,
+                                get_inventory_buttons(inventory, msg_id),
+                                "Bag of Holding:")
+            logging.info(f"{query.from_user.first_name} removed {item_amount} of {item_name} - {msg_id}")
+            await update_pin(update, context, inventory)
+        elif cmd == "cancel":
+            await get_inline_kb(query,
+                                context.bot,
+                                get_inventory_buttons(inventory, msg_id),
+                                "Bag of Holding:")
+            logging.info(f"{query.from_user.first_name} canceled edit screen")
+        elif cmd == "close":
+            await query.message.delete()
+            try:
+                await context.bot.send_sticker(chat_id=update.effective_chat.id,
+                                                sticker=get_sticker(query.from_user.username))
+                logging.info(f"{query.from_user.first_name} closed inline keyboard message")
+            except:
+                logging.info(f"{query.from_user.username} is not in dictionary")
+            # await context.bot.delete_message(chat_id=query.message.chat_id,
+            #                                  message_id=msg_id)
+        elif cmd == "edit":
+            keyboard = [[InlineKeyboardButton("ADD", callback_data=f"add:{item_name}:1:{msg_id}"), InlineKeyboardButton("REMOVE", callback_data=f"remove:{item_name}:1:{msg_id}")],
+                        [InlineKeyboardButton("ADD 2", callback_data=f"add:{item_name}:2:{msg_id}"), InlineKeyboardButton("REMOVE 2", callback_data=f"remove:{item_name}:2:{msg_id}")],
+                        [InlineKeyboardButton("ADD 5", callback_data=f"add:{item_name}:5:{msg_id}"), InlineKeyboardButton("REMOVE 5", callback_data=f"remove:{item_name}:5:{msg_id}")],
+                        [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
+            await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
+            logging.info(f"{query.from_user.first_name} wants to edit {item_name} - {msg_id}")
+    except:
+        logging.warn("Failed to bag_menu")
 
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -97,16 +95,7 @@ async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def list_raw(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    chat = await context.bot.get_chat(chat_id=update.effective_chat.id)
-    if inventory.get_msg_id() == "":
-        req = await context.bot.send_message(chat_id=update.effective_chat.id,
-                                       text=str(inventory))
-        inventory.set_msg_id(req.message_id)
-        await context.bot.pin_chat_message(chat_id=update.effective_chat.id,
-                                     message_id=req.message_id)
-    else:
-        await update_pin(update, context, inventory)
-
+    await send_new_msg(update, context, inventory)
 
 async def list(update: Update, context: ContextTypes.DEFAULT_TYPE):
     inventory_buttons = get_inventory_buttons(inventory, str(update.message.id))
@@ -157,7 +146,7 @@ if __name__ == '__main__':
     unknown_handler = MessageHandler(filters.COMMAND, unknown)
     application.add_handler(unknown_handler)
 
-    remove_button_handler = CallbackQueryHandler(remove_button)
+    remove_button_handler = CallbackQueryHandler(bag_menu)
     application.add_handler(remove_button_handler)
 
     application.run_polling()

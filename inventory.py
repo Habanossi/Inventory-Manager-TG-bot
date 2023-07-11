@@ -1,12 +1,5 @@
 import os.path
-import logging
-
-
-logging.basicConfig(
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.INFO
-)
-
+from includes.helpers import logging
 
 class Inventory:
     def __init__(self, inventory_file):

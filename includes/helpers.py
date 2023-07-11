@@ -1,8 +1,15 @@
 import numpy as np
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from math import ceil
+import logging
 import json
 import random
+
+logging.basicConfig(
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    level=logging.INFO
+)
+
 
 def get_inventory_buttons(inventory, msg_id=""):
     inventory_buttons = np.array(
@@ -37,8 +44,19 @@ def get_sticker(username):
         data = json.load(f)
     return random.choice(data[username])
 
-def update_pin(update, context, inventory):
-    return context.bot.edit_message_text(chat_id=update.effective_chat.id,
-                                    message_id=inventory.get_msg_id(),
+async def send_new_msg(update, context, inventory):
+    req = await context.bot.send_message(chat_id=update.effective_chat.id,
                                     text=str(inventory))
-get_sticker("Flavionator")
+    inventory.set_msg_id(req.message_id)
+    logging.info(f"Set new message id {req.message_id}")
+    await context.bot.pin_chat_message(chat_id=update.effective_chat.id,
+                                    message_id=req.message_id)
+
+async def update_pin(update, context, inventory):
+    try:
+        await context.bot.edit_message_text(chat_id=update.effective_chat.id,
+                                        message_id=inventory.get_msg_id(),
+                                        text=str(inventory))
+    except Exception as e:
+        logging.info(f"Exception: {e}")
+        await send_new_msg(update, context, inventory)
