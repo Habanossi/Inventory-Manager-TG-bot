@@ -29,7 +29,8 @@ class Inventory:
             self.msg_id = f.read()
             print("MESSAGE_ID: ", self.msg_id)
 
-
+    def __contains__(self, item_name):
+        return item_name in [item.name for item in self.items]
 
     def __str__(self):
         s = "Bag of Holding:\n"
@@ -42,32 +43,29 @@ class Inventory:
             logging.info("Tried to add item with no name.")
             return "Please enter a valid item to add"
         else:
-            # If in items, add amount
-            found = False
-            for item in self.get_items():
-                if str(item.get_name()) == item_name:
-                    item.add(amount)
-                    found = True
-
-            # If not in items, add to items
-            if not found:
-                self.items.append(Item(item_name, amount))
-                logging.info(f"Added new item: {item_name} to the Inventory")
+            # If in items, increment amount
+            if item_name in self:
+                for item in self.items:
+                    if str(item.name) == item_name:
+                        #item.increment(amount)
+                        item += amount
+                        found = True
             else:
-                logging.info(f"Added {amount} of item {item_name} to the Inventory")
+                self.items.append(Item(item_name, amount))
 
             self.write_inventory()
             return f"'{item_name}' added to Inventory"
 
-    def remove(self, item, amount=1):
+    def remove(self, input, amount=1):
         # Option for selecting item by index (int)
-        if item.isnumeric():
+        if input.isnumeric():
             try:
-                item_name = self.get_items()[int(item)].get_name()
+                index = input
+                item_name = self.items[int(index)].name
             except IndexError:
-                return f"'{item}' is not a valid index"
+                return f"'{index}' is not a valid index"
         else:
-            item_name = item
+            item_name = input
 
         if item_name == "":
             logging.info("Tried to remove item with no name")
@@ -77,25 +75,22 @@ class Inventory:
             logging.info(f"Tried to remove item {item_name}, which is not in the Inventory")
             return f"'{item_name}' is not in the inventory :("
 
-        for i, curr_item in enumerate(self.get_items()):
-            if str(curr_item.get_name()) == item_name:
-                curr_item.remove(amount)
-                if curr_item.get_amount() < 1:
+        for i, curr_item in enumerate(self.items):
+            if str(curr_item.name) == item_name:
+                curr_item -= amount
+                if curr_item.amount < 1:
                     self.items.pop(i)
                 self.write_inventory()
                 return f"'{item_name}' removed from inventory"
 
     def write_inventory(self):
         with open(self.inventory_file, "w") as f:
-            for curr_item in self.get_items():
-                f.write(f"{curr_item.get_name()},{curr_item.get_amount()}\n")
+            for curr_item in self.items:
+                f.write(f"{curr_item.name},{curr_item.amount}\n")
 
     def has_item(self, item_name):
-        item_names = [str(item.get_name()) for item in self.get_items()]
+        item_names = [str(item.name) for item in self.items]
         return item_name in item_names
-
-    def get_items(self):
-        return self.items
 
     def set_msg_id(self, id):
         self.msg_id = str(id)
@@ -110,20 +105,13 @@ class Item:
         self.name = name
         self.amount = int(amount)
 
-    def add(self, amount=1):
+    def __iadd__(self, amount=1):
         self.amount += int(amount)
-        logging.info(f"Added {amount} of item {self.name} to the Inventory, now {self.amount}")
+        return self
 
-    def remove(self, amount=1):
+    def __isub__(self, amount=1):
         self.amount = max(self.amount - int(amount), 0)
-        logging.info(f"Removed {amount} of item {self.name} from the Inventory, now {self.amount}")
-
-    # Accessors
-    def get_name(self):
-        return self.name
-
-    def get_amount(self):
-        return self.amount
+        return self
 
     def __str__(self):
-        return self.get_name()
+        return self.name

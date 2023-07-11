@@ -79,8 +79,8 @@ async def bag_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
                         [InlineKeyboardButton("CANCEL", callback_data=f"cancel:::{msg_id}")]]
             await get_inline_kb(query, context.bot, keyboard, f"EDIT {item_name} x{item_amount}")
             logging.info(f"{query.from_user.first_name} wants to edit {item_name} - {msg_id}")
-    except:
-        logging.warn("Failed to bag_menu")
+    except Exception as e:
+        logging.error(f"Failed to bag_menu ERR: {e}")
 
 
 async def remove(update: Update, context: ContextTypes.DEFAULT_TYPE):

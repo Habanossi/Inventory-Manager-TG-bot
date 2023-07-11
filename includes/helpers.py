@@ -13,7 +13,7 @@ logging.basicConfig(
 
 def get_inventory_buttons(inventory, msg_id=""):
     inventory_buttons = np.array(
-        [InlineKeyboardButton(f"{i}: {item.get_name()} x{item.get_amount()}", callback_data=f"edit:{item.get_name()}:{item.get_amount()}:{msg_id}") for i, item in enumerate(inventory.get_items())]
+        [InlineKeyboardButton(f"{i}: {item.name} x{item.amount}", callback_data=f"edit:{item.name}:{item.amount}:{msg_id}") for i, item in enumerate(inventory.items)]
         )
     # 2 columns if more than 10 elements
     if len(inventory_buttons) > 10:
